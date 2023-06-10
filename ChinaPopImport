@@ -1,0 +1,43 @@
+import pandas as pd
+import pyodbc
+
+# Read CSV file and filter out columns
+df = pd.read_csv('china_population.csv', usecols=['Year', 'Population', 'Yearly % Change', 'Yearly Change',
+                                                  'Median Age', 'Fertility Rate', 'Urban Pop %', 'Urban Population',
+                                                  'Countrys Share of World Pop', 'World Population'])
+
+# Rename columns in DataFrame
+df.rename(columns={'Yearly % Change': 'YearlyPctChg', 'Yearly Change': 'YearlyChange', 'Median Age': 'MedianAge',
+                   'Fertility Rate': 'FertilityRate', 'Urban Pop %': 'UrbanPopPct', 'Urban Population': 'UrbanPopulation',
+                   'Countrys Share of World Pop': 'CountrysShareofWorldPop', 'World Population': 'WorldPopulation'},
+          inplace=True)
+
+print(df)
+
+# Connection String for ChinaPopDB (SQL Server)
+conn = pyodbc.connect('Driver={SQL Server};'
+                      'Server=TABLET-0CGS1SI0;'
+                      'Database=ChinaPop;'
+                      'Trusted_Connection=yes;')
+
+# Create cursor to execute SQL statements on ChinaPopDB
+cursor = conn.cursor()
+
+print("Successfully connected to the database!")
+
+# Insert the DataFrame data into a SQL Server table (ChinaPop.CHDB.Pop)
+for _, row in df.iterrows():
+    cursor.execute("INSERT INTO ChinaPop.CHDB.Population (Year, Population, YearlyPctChg, YearlyChange, MedianAge, FertilityRate, "
+                   "UrbanPopPct, UrbanPopulation, CountrysShareofWorldPop, WorldPopulation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   row['Year'], row['Population'], row['YearlyPctChg'], row['YearlyChange'], row['MedianAge'],
+                   row['FertilityRate'], row['UrbanPopPct'], row['UrbanPopulation'], row['CountrysShareofWorldPop'],
+                   row['WorldPopulation'])
+
+print("Data successfully imported into ChinaPopDB!")
+
+# Commit the changes to the database
+conn.commit()
+
+# Close the cursor and connection
+cursor.close()
+conn.close()
