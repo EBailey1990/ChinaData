@@ -1,0 +1,36 @@
+import pandas as pd
+import pyodbc
+
+# Read CSV file and filter out columns
+df = pd.read_csv('city_population_china.csv', usecols=['City Name', 'Population'])
+
+# Rename columns in DataFrame
+df.rename(columns={'City Name': 'CityName'},
+          inplace=True)
+
+print(df)
+
+# Connection String for ChinaPopDB (SQL Server)
+conn = pyodbc.connect('Driver={SQL Server};'
+                      'Server=TABLET-0CGS1SI0;'
+                      'Database=ChinaPop;'
+                      'Trusted_Connection=yes;')
+
+# Create cursor to execute SQL statements on ChinaPopDB
+cursor = conn.cursor()
+
+print("Successfully connected to the database!")
+
+# Insert the DataFrame data into a SQL Server table (ChinaPop.CHDB.Pop)
+for _, row in df.iterrows():
+    cursor.execute("INSERT INTO ChinaPop.CHDB.CityPopulation (CityName, Population) VALUES (?, ?)",
+                   row['CityName'], row['Population'])
+
+print("Data successfully imported into ChinaPopDB!")
+
+# Commit the changes to the database
+conn.commit()
+
+# Close the cursor and connection
+cursor.close()
+conn.close()
